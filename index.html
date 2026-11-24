@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Tino Mbasera — The Voice. The Hymn. The Journey.</title>
+  <meta name="description" content="Tino Mbasera — Zimbabwean gospel artist. A cinematic journey through the I Am of God live recording, the song route, the Vault and ways to partner.">
+  <meta name="theme-color" content="#0d1218">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Montserrat:wght@500;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <!-- Fixed chrome -->
+  <header class="chrome" role="banner">
+    <a class="chrome__logo" href="#valley" aria-label="Tino Mbasera — back to the start">
+      <span class="tm tm--sm" data-logo aria-hidden="true"></span>
+    </a>
+    <a class="chrome__mark" href="#voice" aria-label="I Am of God — the live recording">
+      <svg viewBox="0 0 24 40" aria-hidden="true"><path d="M12 1v38M4 12h16" /><circle cx="12" cy="12" r="5.5"/></svg>
+      <span data-bind="brand.mark"></span>
+    </a>
+  </header>
+
+  <nav class="rail" aria-label="Chapters">
+    <ol class="rail__list" id="railList"></ol>
+    <div class="rail__track" aria-hidden="true"><span class="rail__fill" id="railFill"></span></div>
+  </nav>
+
+  <button class="fab fab--menu" id="menuBtn" aria-expanded="false" aria-controls="menu">
+    <span class="fab__lines" aria-hidden="true"></span><span class="sr">Open menu</span>
+  </button>
+  <button class="fab fab--motion" id="motionBtn" aria-pressed="false">
+    <svg class="i-pause" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4h3v12H6zM11 4h3v12h-3z"/></svg>
+    <svg class="i-play" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4l10 6-10 6z"/></svg>
+    <span class="sr" id="motionLabel">Pause ambient motion</span>
+  </button>
+
+  <div class="menu" id="menu" role="dialog" aria-modal="true" aria-label="Site menu" hidden>
+    <div class="menu__inner">
+      <p class="eyebrow">Chapters</p>
+      <ol class="menu__list" id="menuList"></ol>
+      <div class="menu__foot">
+        <button class="btn btn--ghost" id="replayBtn" type="button">Replay the opening</button>
+        <button class="btn btn--ghost" id="menuClose" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <main id="main">
+    <!-- 1 · Opening valley + instrument assembly (sticky scroll-bound frame player) -->
+    <section class="scene scene--hero" id="valley" aria-labelledby="heroTitle">
+      <div class="scene__sticky">
+        <canvas class="scene__canvas" id="heroCanvas" role="img"></canvas>
+        <div class="scene__grade" aria-hidden="true"></div>
+        <div class="hero__logo" id="heroLogo">
+          <h1 id="heroTitle" class="sr" data-bind="brand.name"></h1>
+          <p class="hero__sub" data-bind="hero.sub"></p>
+        </div>
+        <a class="hero__cue" id="heroCue" href="#valley-captions"><span data-bind="brand.enterCue"></span><i aria-hidden="true"></i></a>
+        <div class="hero__captions" id="valley-captions" aria-live="off"></div>
+        <div class="flare" id="flare" aria-hidden="true">
+          <div class="flare__burst"></div>
+          <p class="flare__word" data-bind="brand.mark"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 · Musician / voice -->
+    <section class="voice" id="voice" aria-labelledby="voiceTitle">
+      <figure class="voice__film reveal">
+        <div class="media" id="voiceMedia"></div>
+        <figcaption class="voice__caption" id="voiceCaption"></figcaption>
+      </figure>
+      <div class="voice__card reveal">
+        <p class="eyebrow eyebrow--brick" data-bind="voice.eyebrow"></p>
+        <h2 id="voiceTitle"><span class="sr" data-bind="brand.name"></span><span class="tm tm--lg tm--ink" data-logo aria-hidden="true"></span></h2>
+        <p class="voice__sub" data-bind="voice.subtitle"></p>
+        <p class="voice__line" data-bind="voice.line"></p>
+      </div>
+    </section>
+
+    <!-- 3 · Story / philosophy (cream) -->
+    <section class="story" id="story" aria-labelledby="storyTitle">
+      <div class="story__text reveal">
+        <p class="eyebrow eyebrow--brick" data-bind="story.eyebrow"></p>
+        <h2 id="storyTitle" class="h2" data-bind="story.title"></h2>
+        <div id="storyBody" class="story__body"></div>
+        <p class="story__pull" data-bind="story.pull"></p>
+        <p class="story__pullsub" data-bind="story.pullSub"></p>
+        <ul class="tags" id="storyTags"></ul>
+      </div>
+      <figure class="story__img reveal" id="storyImg"></figure>
+    </section>
+
+    <!-- 4 · Instrument engraving + timeline (pale) -->
+    <section class="service" id="service" aria-labelledby="serviceTitle">
+      <div class="service__sticky">
+        <figure class="service__plate">
+          <canvas id="plateCanvas" role="img" aria-label="The TM — Tinotenda Mbasera Music — logo in gold foil, turning slightly in 3D over engraved concentric rings"></canvas>
+        </figure>
+        <div class="service__line">
+          <p class="eyebrow eyebrow--brick" data-bind="service.eyebrow"></p>
+          <ol class="steps" id="steps"></ol>
+          <h2 id="serviceTitle" class="service__title" data-bind="service.title"></h2>
+          <p class="service__note" data-bind="service.note"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 · Route / map -->
+    <section class="route" id="route" aria-labelledby="routeTitle">
+      <div class="route__sticky">
+        <div class="route__map">
+          <svg id="routeSvg" viewBox="0 0 400 600" role="img" aria-labelledby="routeSvgTitle">
+            <title id="routeSvgTitle">A fine gold line connecting each release in order, lighting up as you scroll.</title>
+            <path id="routeGhost" class="route__ghost" />
+            <path id="routePath" class="route__path" />
+            <g id="routeStops"></g>
+            <circle id="routeHalo" class="route__halo" r="60" cx="-200" cy="-200"/>
+          </svg>
+        </div>
+        <div class="route__text">
+          <p class="eyebrow eyebrow--gold" data-bind="route.eyebrow"></p>
+          <h2 id="routeTitle" class="sr">The Song Route</h2>
+          <p class="route__intro" data-bind="route.intro"></p>
+          <div class="route__cards" id="routeCards" aria-live="polite"></div>
+        </div>
+      </div>
+      <ol class="route__list sr" id="routeList"></ol>
+    </section>
+
+    <!-- 6 · Statement + numbers -->
+    <section class="statement" aria-labelledby="statementTitle">
+      <h2 id="statementTitle" class="statement__h reveal"><span data-bind="statement.a"></span><br><em data-bind="statement.b"></em></h2>
+      <p class="statement__sub reveal" data-bind="statement.sub"></p>
+    </section>
+
+    <section class="numbers" aria-labelledby="numbersTitle">
+      <h2 id="numbersTitle" class="sr">By the numbers</h2>
+      <dl class="numbers__grid" id="numbers"></dl>
+      <p class="numbers__asof" data-bind="numbers.asOf"></p>
+    </section>
+
+    <!-- 7 · Collaboration / partnership -->
+    <section class="ministry" id="ministry" aria-labelledby="collabTitle">
+      <div class="ministry__head reveal">
+        <p class="eyebrow eyebrow--gold" data-bind="collaborators.eyebrow"></p>
+        <h2 id="collabTitle" class="h2 h2--light" data-bind="collaborators.title"></h2>
+      </div>
+      <ul class="rows" id="collabRows"></ul>
+
+      <div class="partner">
+        <div class="partner__head reveal">
+          <p class="eyebrow eyebrow--gold" data-bind="partnership.eyebrow"></p>
+          <h3 class="h2 h2--light" data-bind="partnership.title"></h3>
+          <p class="partner__intro" data-bind="partnership.intro"></p>
+        </div>
+        <ol class="ways" id="ways"></ol>
+        <a class="btn" href="#contact" data-bind="partnership.cta"></a>
+      </div>
+    </section>
+
+    <!-- 8 · Vault / archive -->
+    <section class="vault" id="vault" aria-labelledby="vaultTitle">
+      <div class="vault__head reveal">
+        <p class="eyebrow eyebrow--gold" data-bind="vault.eyebrow"></p>
+        <h2 id="vaultTitle" class="h2 h2--light" data-bind="vault.title"></h2>
+        <p class="vault__intro" data-bind="vault.intro"></p>
+      </div>
+      <ul class="vault__grid" id="vaultGrid"></ul>
+    </section>
+
+    <!-- 9 · Closing valley at dusk -->
+    <section class="scene scene--closing" id="closing" aria-labelledby="closingTitle">
+      <div class="scene__sticky">
+        <canvas class="scene__canvas" id="closingCanvas" role="img" aria-label="A live worship stage in warm amber light, the camera slowly drawing back."></canvas>
+        <div class="scene__grade scene__grade--dusk" aria-hidden="true"></div>
+        <div class="closing__words">
+          <p class="closing__a" id="closingA" data-bind="closing.a"></p>
+          <h2 class="closing__b" id="closingTitle" data-bind="closing.b"></h2>
+        </div>
+        <div class="closing__sign" id="closingSign">
+          <span class="tm tm--md" data-logo aria-hidden="true"></span>
+          <div class="closing__ctas" id="closingCtas"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10 · Contact -->
+    <section class="contact" id="contact" aria-labelledby="contactTitle">
+      <div class="contact__about">
+        <p class="eyebrow eyebrow--gold" data-bind="contact.eyebrow"></p>
+        <h2 id="contactTitle" class="h2 h2--light" data-bind="contact.title"></h2>
+        <p class="contact__body" data-bind="contact.body"></p>
+        <ul class="contact__links" id="contactLinks"></ul>
+      </div>
+      <form class="form" id="contactForm" novalidate>
+        <p class="form__title" data-bind="contact.formTitle"></p>
+        <label class="field"><span>Name</span><input name="name" autocomplete="name" required></label>
+        <label class="field"><span>Email</span><input name="email" type="email" autocomplete="email" required></label>
+        <label class="field"><span>Message</span><textarea name="message" rows="4" required></textarea></label>
+        <button class="btn" type="submit">Send the note</button>
+        <p class="form__status" id="formStatus" role="status"></p>
+      </form>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span class="tm tm--foot" data-logo aria-hidden="true"></span>
+    <p data-bind="footer.credit"></p>
+    <p class="footer__small" data-bind="footer.design"></p>
+  </footer>
+
+  <noscript><p class="noscript">This cinematic site needs JavaScript. Listen to Tino Mbasera on <a href="https://www.youtube.com/@TinoMbasera">YouTube</a> or <a href="https://open.spotify.com/artist/27T5p5QJzhzrAtx7NZS6xP">Spotify</a>.</p></noscript>
+
+  <script src="config.js"></script>
+  <script src="scene.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
