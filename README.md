@@ -73,3 +73,18 @@ has not loaded yet. For the art slots, set `image` to replace the procedural car
 - The menu traps keyboard focus and closes on Escape. Chapter links move focus to the section heading.
 - Each canvas has an `aria-label`. Hero captions are real text. The route is duplicated as a text list for screen readers.
 - The first frame is drawn before the animation loop starts. Thumbnails and art slots load lazily. Device pixel ratio is capped (1.25 on mobile, 1.6 on desktop). The YouTube player loads only when a visitor presses play.
+
+## Security
+See [SECURITY.md](SECURITY.md) for what the site does to protect visitors and how to report
+a problem. Short version:
+- A strict Content Security Policy, with no inline scripts, inline styles or `eval`.
+- Escaping and URL allow-listing on everything read from `config.js`.
+- A clickjacking guard.
+- A spam-resistant contact form.
+- `noopener noreferrer` on external links.
+- A `security.txt` file.
+- A `_headers` file with HSTS, `X-Frame-Options`, `Permissions-Policy` and the other
+  header-only protections, for hosts that support it.
+
+If you connect a form endpoint in `config.js`, add its origin to `connect-src` in the CSP in
+`index.html` and in `_headers`.

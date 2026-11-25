@@ -1,0 +1,6 @@
+# Security contact for the Tino Mbasera website (RFC 9116)
+Contact: https://github.com/tawananyashamarekwa-design/tinombaseramusic/security/advisories/new
+Expires: 2027-11-25T00:00:00.000Z
+Preferred-Languages: en
+Policy: https://github.com/tawananyashamarekwa-design/tinombaseramusic/blob/main/SECURITY.md
+Canonical: https://tawananyashamarekwa-design.github.io/tinombaseramusic/.well-known/security.txt

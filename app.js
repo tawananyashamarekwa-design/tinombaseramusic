@@ -1,15 +1,34 @@
 /* app.js — content binding, scroll-progress engine, controls. No dependencies. */
 (function () {
   "use strict";
+
+  // Clickjacking guard: GitHub Pages cannot send X-Frame-Options / frame-ancestors,
+  // so refuse to render inside someone else's frame.
+  if (window.top !== window.self) {
+    try { window.top.location.replace(window.self.location.href); } catch (e) { document.documentElement.hidden = true; return; }
+  }
+
   const C = window.SITE, S = window.Scene;
   const { clamp, lerp, ease } = S;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
-  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"'`]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;", "`": "&#96;" }[c]));
+  // URL allow-list: https links, mailto, and relative paths to the site's own files.
+  // Anything else (javascript:, data:, http:, protocol-relative //host) becomes "#".
+  const safeUrl = (u) => {
+    const s = String(u == null ? "" : u).trim();
+    if (/^https:\/\/[^\s"'<>`]+$/i.test(s) || /^mailto:[^\s"'<>`]+$/i.test(s)) return s;
+    if (/^(?!\/\/)[\w\-./#?=&%]+$/.test(s)) return s;
+    return "#";
+  };
+  const ytId = (id) => (/^[\w-]{11}$/.test(String(id || "")) ? String(id) : "");
+  const safeId = (s) => String(s || "").replace(/[^\w-]/g, "");
+  const safeEmail = (e) => (/^[^\s@<>"'()`]{1,64}@[^\s@<>"'()`]{1,190}\.[a-z]{2,24}$/i.test(String(e || "")) ? String(e) : "");
   const get = (path) => path.split(".").reduce((o, k) => (o ? o[k] : undefined), C);
-  const thumb = (id, q = "hqdefault") => `https://i.ytimg.com/vi/${id}/${q}.jpg`;
-  const watch = (id) => `https://www.youtube.com/watch?v=${id}`;
+  const thumb = (id, q = "hqdefault") => `https://i.ytimg.com/vi/${ytId(id)}/${q}.jpg`;
+  const watch = (id) => `https://www.youtube.com/watch?v=${ytId(id)}`;
+  const EXT = 'target="_blank" rel="noopener noreferrer"';
 
   const mqReduce = window.matchMedia("(prefers-reduced-motion: reduce)");
   const state = { reduced: mqReduce.matches, paused: mqReduce.matches, t: 0 };
@@ -24,9 +43,10 @@
 
   // chapters → rail + menu
   C.chapters.forEach((ch, i) => {
-    const li = el("li"); li.innerHTML = `<a href="#${ch.id}" data-ch="${ch.id}"><span class="rail__dot" aria-hidden="true"></span><span class="rail__label">${esc(ch.label)}</span></a>`;
+    const id = safeId(ch.id);
+    const li = el("li"); li.innerHTML = `<a href="#${id}" data-ch="${id}"><span class="rail__dot" aria-hidden="true"></span><span class="rail__label">${esc(ch.label)}</span></a>`;
     $("#railList").append(li);
-    const mi = el("li"); mi.innerHTML = `<a href="#${ch.id}"><span class="menu__n">${String(i + 1).padStart(2, "0")}</span>${esc(ch.label)}</a>`;
+    const mi = el("li"); mi.innerHTML = `<a href="#${id}"><span class="menu__n">${String(i + 1).padStart(2, "0")}</span>${esc(ch.label)}</a>`;
     $("#menuList").append(mi);
   });
 
@@ -35,13 +55,18 @@
 
   // voice: click-to-load video (no third-party iframe until the visitor asks)
   (function () {
-    const m = $("#voiceMedia"), id = C.voice.featureVideo;
+    const m = $("#voiceMedia"), id = ytId(C.voice.featureVideo);
+    if (!id) { m.classList.add("media--empty"); return; }
     m.innerHTML = `<img src="${thumb(id, "maxresdefault")}" alt="Video still: Tino Mbasera leading worship" loading="lazy" decoding="async">
       <button class="media__play" type="button" aria-label="Play ${esc(C.route.stations[0].title)} video"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4l9 6-9 6z"/></svg></button>`;
     const img = $("img", m);
     img.addEventListener("error", () => { if (!img.dataset.f) { img.dataset.f = 1; img.src = thumb(id); } else m.classList.add("media--empty"); });
     $(".media__play", m).addEventListener("click", () => {
-      m.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" title="${esc(C.route.stations[0].title)} — Tino Mbasera" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+      // Privacy-enhanced player that only loads when the visitor asks for it. Not sandboxed:
+      // the sandbox attribute stops YouTube's player from rendering; it is already isolated
+      // by origin, and the CSP allows no other frame source.
+      m.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" title="${esc(C.route.stations[0].title)} — Tino Mbasera"
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
     });
     $("#voiceCaption").textContent = C.voice.featureCaption;
   })();
@@ -50,7 +75,7 @@
   (function () {
     const fig = $("#storyImg");
     if (C.story.image) {
-      fig.innerHTML = `<img src="${C.story.image}" alt="${esc(C.story.imageAlt || C.brand.name)}" loading="lazy" decoding="async">`;
+      fig.innerHTML = `<img src="${esc(safeUrl(C.story.image))}" alt="${esc(C.story.imageAlt || C.brand.name)}" loading="lazy" decoding="async">`;
       $("img", fig).addEventListener("error", () => { fig.innerHTML = `<canvas class="art" data-slot="vault-mark" aria-hidden="true"></canvas>`; artIO && artIO.observe($("canvas", fig)); });
     } else fig.innerHTML = `<canvas class="art" data-slot="vault-mark" aria-hidden="true"></canvas>`;
   })();
@@ -69,22 +94,24 @@
   C.vault.cards.forEach((c) => {
     const li = el("li", "vcard reveal");
     if (c.video) {
-      li.innerHTML = `<a href="${watch(c.video)}" target="_blank" rel="noopener"><span class="vcard__img"><img src="${thumb(c.video)}" alt="" loading="lazy" decoding="async"></span>
+      if (!ytId(c.video)) return;
+      li.innerHTML = `<a href="${watch(c.video)}" ${EXT}><span class="vcard__img"><img src="${thumb(c.video)}" alt="" loading="lazy" decoding="async"></span>
         <span class="vcard__meta"><span class="vcard__t">${esc(c.title)}</span><span class="vcard__s">${esc(c.text)}</span></span><span class="sr">(opens YouTube in a new tab)</span></a>`;
       $("img", li).addEventListener("error", (e) => e.target.closest(".vcard__img").classList.add("vcard__img--empty"));
     } else {
       const img = c.image || (C.assets[c.slot] || {}).image;
-      const inner = `<span class="vcard__img">${img ? `<img src="${img}" alt="" loading="lazy" decoding="async">` : `<canvas class="art" data-slot="${c.slot}" aria-hidden="true"></canvas>`}</span>
+      const inner = `<span class="vcard__img">${img ? `<img src="${esc(safeUrl(img))}" alt="" loading="lazy" decoding="async">` : `<canvas class="art" data-slot="${safeId(c.slot)}" aria-hidden="true"></canvas>`}</span>
         <span class="vcard__meta"><span class="vcard__t">${esc(c.title)}</span><span class="vcard__s">${esc(c.text)}</span></span>`;
-      li.innerHTML = c.href ? `<a href="${c.href}" target="_blank" rel="noopener">${inner}<span class="sr">(opens in a new tab)</span></a>` : `<div class="vcard__art">${inner}</div>`;
+      li.innerHTML = c.href ? `<a href="${esc(safeUrl(c.href))}" ${EXT}>${inner}<span class="sr">(opens in a new tab)</span></a>` : `<div class="vcard__art">${inner}</div>`;
     }
     $("#vaultGrid").append(li);
   });
 
   // closing CTAs + contact links
-  C.closing.ctas.forEach((c) => { const a = el("a", "btn btn--ghost", esc(c.label)); a.href = c.href; a.target = "_blank"; a.rel = "noopener"; $("#closingCtas").append(a); });
-  C.contact.links.forEach((l) => $("#contactLinks").append(el("li", "", `<a href="${l.href}" target="_blank" rel="noopener">${esc(l.label)}</a>`)));
-  if (C.contact.email) $("#contactLinks").append(el("li", "", `<a href="mailto:${esc(C.contact.email)}">${esc(C.contact.email)}</a>`));
+  C.closing.ctas.forEach((c) => { const a = el("a", "btn btn--ghost", esc(c.label)); a.href = safeUrl(c.href); a.target = "_blank"; a.rel = "noopener noreferrer"; $("#closingCtas").append(a); });
+  C.contact.links.forEach((l) => $("#contactLinks").append(el("li", "", `<a href="${esc(safeUrl(l.href))}" ${EXT}>${esc(l.label)}</a>`)));
+  const contactEmail = safeEmail(C.contact.email);
+  if (contactEmail) $("#contactLinks").append(el("li", "", `<a href="mailto:${esc(contactEmail)}">${esc(contactEmail)}</a>`));
 
   /* ---------- 2. route geometry ---------- */
   const route = (function () {
@@ -116,7 +143,7 @@
       const card = el("article", "rcard");
       card.innerHTML = `<p class="rcard__n">${String(i + 1).padStart(2, "0")} — ${esc(st[i].year)}</p><h3>${esc(st[i].chapter)}</h3>
         <p class="rcard__song">${esc(st[i].title)}</p><p class="rcard__t">${esc(st[i].text)}</p>
-        <p class="rcard__meta"><span>${esc(st[i].with)}</span><span>${esc(st[i].views)}</span>${st[i].id ? `<a href="${watch(st[i].id)}" target="_blank" rel="noopener">Watch<span class="sr"> ${esc(st[i].title)} on YouTube</span></a>` : ""}</p>`;
+        <p class="rcard__meta"><span>${esc(st[i].with)}</span><span>${esc(st[i].views)}</span>${ytId(st[i].id) ? `<a href="${watch(st[i].id)}" ${EXT}>Watch<span class="sr"> ${esc(st[i].title)} on YouTube</span></a>` : ""}</p>`;
       $("#routeCards").append(card);
       $("#routeList").append(el("li", "", `${esc(st[i].chapter)}: ${esc(st[i].title)} (${esc(st[i].year)}). ${esc(st[i].text)}`));
     });
@@ -348,20 +375,43 @@
     const focusTarget = t.querySelector("h1,h2") || t; focusTarget.setAttribute("tabindex", "-1"); focusTarget.focus({ preventScroll: true });
   });
 
-  // contact form — never pretends to send
+  // contact form — never pretends to send; hardened against spam and injection
+  const LIMITS = { name: 100, email: 254, message: 4000 };
+  const COOLDOWN_MS = 45000, MAX_SENDS = 3, openedAt = Date.now();
+  let lastSend = 0, sends = 0, sending = false;
+  const clean = (v, max) => String(v == null ? "" : v).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F‪-‮⁦-⁩]/g, "").trim().slice(0, max);
+  const endpoint = (() => { const u = safeUrl(C.contact.formEndpoint); return /^https:\/\//i.test(u) ? u : ""; })();
   $("#contactForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const f = e.target, status = $("#formStatus"), data = Object.fromEntries(new FormData(f));
-    const bad = [...f.elements].filter((x) => x.required && !x.checkValidity());
+    const f = e.target, status = $("#formStatus");
+    if (sending) return;
+    // honeypot: humans never see this field; bots that fill it get a silent no-op
+    if (f.elements.website && f.elements.website.value) { status.textContent = "Thank you."; f.reset(); return; }
+    // submissions faster than a person could type are treated as automated
+    if (Date.now() - openedAt < 3000) { status.textContent = "Please take a moment before sending."; return; }
+    const data = { name: clean(f.elements.name.value, LIMITS.name), email: clean(f.elements.email.value, LIMITS.email), message: clean(f.elements.message.value, LIMITS.message) };
     $$(".field", f).forEach((l) => l.classList.remove("err"));
+    const bad = [];
+    if (!data.name) bad.push(f.elements.name);
+    if (!safeEmail(data.email)) bad.push(f.elements.email);
+    if (data.message.length < 2) bad.push(f.elements.message);
     if (bad.length) { bad.forEach((b) => b.closest(".field").classList.add("err")); status.textContent = "Please fill in your name, a valid email and a message."; bad[0].focus(); return; }
-    if (C.contact.formEndpoint) {
-      status.textContent = "Sending…";
-      try { const r = await fetch(C.contact.formEndpoint, { method: "POST", body: new FormData(f), headers: { Accept: "application/json" } }); if (!r.ok) throw 0; status.textContent = "Thank you — your note has been sent."; f.reset(); }
-      catch { status.textContent = "The note could not be sent. Please try again or reach Tino on YouTube."; }
-    } else if (C.contact.email) {
-      location.href = `mailto:${C.contact.email}?subject=${encodeURIComponent("A note for Tino Mbasera")}&body=${encodeURIComponent(data.message + "\n\n— " + data.name + " (" + data.email + ")")}`;
-      status.textContent = "Your email app should open with the note ready to send.";
+    const wait = lastSend + COOLDOWN_MS - Date.now();
+    if (sends >= MAX_SENDS) { status.textContent = "Thank you — you've sent several notes already. Please reach Tino on YouTube for anything more."; return; }
+    if (wait > 0) { status.textContent = `Please wait ${Math.ceil(wait / 1000)} seconds before sending another note.`; return; }
+    if (endpoint) {
+      sending = true; status.textContent = "Sending…";
+      const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 15000);
+      try {
+        const body = new FormData(); Object.entries(data).forEach(([k, v]) => body.append(k, v));
+        const r = await fetch(endpoint, { method: "POST", body, headers: { Accept: "application/json" }, credentials: "omit", referrerPolicy: "no-referrer", mode: "cors", cache: "no-store", redirect: "error", signal: ctrl.signal });
+        if (!r.ok) throw new Error(String(r.status));
+        status.textContent = "Thank you — your note has been sent."; f.reset(); lastSend = Date.now(); sends++;
+      } catch { status.textContent = "The note could not be sent. Please try again or reach Tino on YouTube."; }
+      finally { clearTimeout(timer); sending = false; }
+    } else if (contactEmail) {
+      location.href = `mailto:${contactEmail}?subject=${encodeURIComponent("A note for Tino Mbasera")}&body=${encodeURIComponent(data.message + "\n\n— " + data.name + " (" + data.email + ")")}`;
+      status.textContent = "Your email app should open with the note ready to send."; lastSend = Date.now(); sends++;
     } else {
       status.textContent = "Preview mode: this form is not connected yet. Add a booking email or form endpoint in config.js.";
     }
